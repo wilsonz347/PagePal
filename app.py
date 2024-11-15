@@ -31,7 +31,7 @@ X_scaled = scaler.transform(X)
 
 def generate_books():
     print("hello")
-
+    # Generate a set of books w/ its images associated
 
 def get_knn_recommendations(title, n):
     title_index = df[df['Book-Title'] == title].index[0]
