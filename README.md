@@ -21,5 +21,4 @@ To set up the project, clone the repository and install the required dependencie
 
 ## Running the Application
 To run the Streamlit application, execute the following command in your terminal: streamlit run app.py
-This command will start a local server and open the application in your default web browser.
 
