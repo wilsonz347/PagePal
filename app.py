@@ -1,50 +1,22 @@
 import streamlit as st
 import pandas as pd
 import pickle
-import random
 
-st.set_page_config(page_title="PagePal")
+st.set_page_config(page_title="PagePal", page_icon="📚")
 
-def load_dataset():
-    dataframe = pd.read_csv('Books_Data.csv')
-    return dataframe
+with open('vectorizer.pkl', 'rb') as f:
+    vectorizer = pickle.load(f)
 
-def load_model():
-    with open('knn_model.pkl', 'rb') as f:
-        knn_model = pickle.load(f)
-    return knn_model
+with open('scaler.pkl', 'rb') as f:
+    scaler = pickle.load(f)
 
-def load_scaler():
-    with open('scaler.pkl', 'rb') as f:
-        scale = pickle.load(f)
-    return scale
+with open('knn_model.pkl', 'rb') as f:
+    knn = pickle.load(f)
 
-def load_vectorizer():
-    with open('vectorizer.pkl', 'rb') as f:
-        vector = pickle.load(f)
-    return vector
-
-df = load_dataset()
-knn = load_model()
-scaler = load_scaler()
-vectorizer = load_vectorizer()
+df = pd.read_csv('Books_Data.csv')
 
 X = vectorizer.transform(df['Combined'])
 X_scaled = scaler.transform(X)
-
-def generate_books(num_books):
-    selected_books = df.sample(n=num_books)
-
-    books = []
-    for _, book in selected_books.iterrows():
-        books.append({
-            'title': book['Book-Title'],
-            'author': book['Book-Author'],
-            'year': book['Year-Of-Publication'],
-            'image_url': book['Image-URL-S']
-        })
-
-    return books
 
 def get_knn_recommendations(title, n):
     title_index = df[df['Book-Title'] == title].index[0]
@@ -58,7 +30,7 @@ def get_knn_recommendations(title, n):
         'Book-Title': recommended_books['Book-Title'].values,
         'Book-Author': recommended_books['Book-Author'].values,
         'Publication_Date': recommended_books['Year-Of-Publication'].values,
-        'image_url': recommended_books['Image-URL-S'],
+        'Image-URL': recommended_books['Image-URL-S'].values,
         'Similarity': similarities
     })
 
@@ -67,52 +39,45 @@ def get_knn_recommendations(title, n):
     return Recommendation
 
 
-def get_recommendations_from_featured(selected_title, featured_books, num_recommendations):
-    other_books = [book for book in featured_books if book['title'] != selected_title]
-
-    recommendations = random.sample(other_books, min(num_recommendations, len(other_books)))
-
-    return recommendations
-
-
 def main():
     st.title("Book Recommendation System")
 
+    st.warning("**Disclaimer:** Some images may not be available due to the age of the dataset.")
+
     if 'featured_books' not in st.session_state:
-        st.session_state.featured_books = generate_books(num_books=5)
+        st.session_state.featured_books = df.sample(3)
 
-    st.header("Featured Books")
-    cols = st.columns(5)
-    for i, book in enumerate(st.session_state.featured_books):
+    featured_books = st.session_state.featured_books
+
+    cols = st.columns(3)
+    for i, row in enumerate(featured_books.iterrows()):
         with cols[i]:
-            st.image(book['image_url'], width=100)
-            st.write(f"**{book['title']}**")
-            st.write(f"by {book['author']}")
-            st.write(f"Year: {book['year']}")
+            st.write(f"**Title:** {row[1]['Book-Title']}")
+            st.write(f"**Author:** {row[1]['Book-Author']}")
+            st.image(row[1]['Image-URL-S'], width=100)
 
-    st.header("Get Book Recommendations")
+    if st.button("Regenerate Featured Books"):
+        st.session_state.featured_books = df.sample(3)
+        st.rerun()
 
-    featured_titles = [book['title'] for book in st.session_state.featured_books]
+    featured_book_titles = featured_books['Book-Title'].tolist()
 
-    book_title = st.selectbox("Select a book:", featured_titles)
+    selected_book = st.selectbox("Select a Book", featured_book_titles)
 
-    num_recommendations = st.slider("Number of recommendations:", 1, 4, 2)
+    num_recommendations = st.slider("Select Number of Recommendations", min_value=1, max_value=4, value=1)
 
-    with st.container():
-        if st.button("Get Recommendations"):
-            recommendations = get_recommendations_from_featured(book_title, st.session_state.featured_books,
-                                                                num_recommendations)
+    if st.button("Get Recommendations"):
+        recommendations = get_knn_recommendations(selected_book, num_recommendations)
 
-            st.subheader(f"Recommendations for '{book_title}':")
-            for rec in recommendations:
-                st.write(f"**{rec['title']}** by {rec['author']}")
-                st.write(f"Year: {rec['year']}")
-                st.image(rec['image_url'], width=100)
-                st.write("---")
+        st.subheader("Recommendations")
+        rec_cols = st.columns(num_recommendations)
 
-        if st.button("Generate New Books"):
-            st.session_state.featured_books = generate_books(num_books=5)
+        for i in range(num_recommendations):
+            with rec_cols[i]:
+                st.write(f"**Title:** {recommendations.iloc[i]['Book-Title']}")
+                st.write(f"**Author:** {recommendations.iloc[i]['Book-Author']}")
+                st.image(recommendations.iloc[i]['Image-URL'], width=100)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
