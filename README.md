@@ -13,6 +13,9 @@ PagePal is a book recommendation system built using Python, leveraging the power
   - Streamlit
 - **Data Source**: Books dataset from [Kaggle](https://www.kaggle.com/datasets/arashnic/book-recommendation-dataset)
 
+## Deployment
+The deployment can be found here: https://wilsonz347-pagepal-app-ji2sz2.streamlit.app/
+
 ## Dataset License
 The dataset used in this project is in the **public domain**. You are free to use, modify, and distribute it without any restrictions.
 
